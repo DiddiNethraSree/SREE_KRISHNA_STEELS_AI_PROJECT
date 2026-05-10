@@ -1,0 +1,222 @@
+[
+  {
+    "id": "SOFA-001",
+    "name": "Royal Comfort 3-Seater Sofa",
+    "category": "sofa",
+    "price": 28999,
+    "material": "Teak wood + premium fabric",
+    "dimensions": "84 x 34 x 32 in",
+    "stockStatus": "In Stock",
+    "imageUrl": "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=1200&q=80",
+    "description": "Soft cushion sofa perfect for family living rooms."
+  },
+  {
+    "id": "SOFA-002",
+    "name": "Luxury L-Shape Sofa Set",
+    "category": "sofa",
+    "price": 45000,
+    "material": "Solid Wood + Velvet",
+    "dimensions": "100 x 60 x 32 in",
+    "stockStatus": "In Stock",
+    "imageUrl": "https://images.unsplash.com/photo-1493666438817-866a91353ca9?auto=format&fit=crop&w=1200&q=80",
+    "description": "Spacious L-shape corner sofa."
+  },
+  {
+    "id": "SOFA-003",
+    "name": "Classic Wooden 2-Seater",
+    "category": "sofa",
+    "price": 18500,
+    "material": "Rosewood",
+    "dimensions": "60 x 30 x 35 in",
+    "stockStatus": "Made to Order",
+    "imageUrl": "https://images.unsplash.com/photo-1540574163026-643ea20ade25?auto=format&fit=crop&w=1200&q=80",
+    "description": "Traditional wooden sofa set."
+  },
+  {
+    "id": "BED-001",
+    "name": "Classic Queen Bed",
+    "category": "bed",
+    "price": 35999,
+    "material": "Solid Sheesham wood",
+    "dimensions": "78 x 60 in",
+    "stockStatus": "In Stock",
+    "imageUrl": "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1200&q=80",
+    "description": "Elegant queen bed with durable frame."
+  },
+  {
+    "id": "BED-002",
+    "name": "King Size Storage Bed",
+    "category": "bed",
+    "price": 42000,
+    "material": "Engineered Wood + Teak Veneer",
+    "dimensions": "78 x 72 in",
+    "stockStatus": "In Stock",
+    "imageUrl": "https://images.unsplash.com/photo-1505693314120-0d443867891c?auto=format&fit=crop&w=1200&q=80",
+    "description": "King bed with hydraulic storage."
+  },
+  {
+    "id": "BED-003",
+    "name": "Diwan Cot Standard",
+    "category": "bed",
+    "price": 14500,
+    "material": "Iron + Teak Finish",
+    "dimensions": "72 x 36 in",
+    "stockStatus": "In Stock",
+    "imageUrl": "https://images.unsplash.com/photo-1540574163026-643ea20ade25?auto=format&fit=crop&w=1200&q=80",
+    "description": "Sturdy diwan cot for living room or guest room."
+  },
+  {
+    "id": "DINING-001",
+    "name": "6-Seater Dining Set",
+    "category": "dining",
+    "price": 42999,
+    "material": "Engineered wood + matte finish",
+    "dimensions": "Table 66 x 36 in",
+    "stockStatus": "Limited Stock",
+    "imageUrl": "https://images.unsplash.com/photo-1617806118233-18e1de247200?auto=format&fit=crop&w=1200&q=80",
+    "description": "Modern dining set for family meals."
+  },
+  {
+    "id": "DINING-002",
+    "name": "4-Seater Glass Top Dining",
+    "category": "dining",
+    "price": 28000,
+    "material": "Toughened Glass + Metal",
+    "dimensions": "48 x 36 in",
+    "stockStatus": "In Stock",
+    "imageUrl": "https://images.unsplash.com/photo-1604578762246-4113565ca42f?auto=format&fit=crop&w=1200&q=80",
+    "description": "Compact dining table for small spaces."
+  },
+  {
+    "id": "OFFICE-001",
+    "name": "Executive Office Chair",
+    "category": "office",
+    "price": 12499,
+    "material": "Mesh + ergonomic support",
+    "dimensions": "Adjustable height",
+    "stockStatus": "In Stock",
+    "imageUrl": "https://images.unsplash.com/photo-1505843490538-5133c6c7d0e1?auto=format&fit=crop&w=1200&q=80",
+    "description": "Comfortable ergonomic chair for long hours."
+  },
+  {
+    "id": "OFFICE-002",
+    "name": "Premium Boss Chair",
+    "category": "office",
+    "price": 18500,
+    "material": "Faux Leather + Steel",
+    "dimensions": "Adjustable height",
+    "stockStatus": "In Stock",
+    "imageUrl": "https://images.unsplash.com/photo-1595514535496-e23a6f1947e4?auto=format&fit=crop&w=1200&q=80",
+    "description": "High back leather chair for executives."
+  },
+  {
+    "id": "OFFICE-003",
+    "name": "L-Shape Office Desk",
+    "category": "office",
+    "price": 22000,
+    "material": "MDF + Metal Frame",
+    "dimensions": "60 x 60 x 30 in",
+    "stockStatus": "Made to Order",
+    "imageUrl": "https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?auto=format&fit=crop&w=1200&q=80",
+    "description": "Spacious workstation table."
+  },
+  {
+    "id": "RACK-001",
+    "name": "Iron Office Rack 5-Tier",
+    "category": "office",
+    "price": 6500,
+    "material": "Powder-coated Iron",
+    "dimensions": "72 x 36 x 15 in",
+    "stockStatus": "In Stock",
+    "imageUrl": "https://images.unsplash.com/photo-1585414922620-3b9cd41eb404?auto=format&fit=crop&w=1200&q=80",
+    "description": "Heavy duty iron rack for files and storage."
+  },
+  {
+    "id": "CUPBOARD-001",
+    "name": "Double Door Almira",
+    "category": "cupboard",
+    "price": 16500,
+    "material": "Steel",
+    "dimensions": "78 x 36 x 20 in",
+    "stockStatus": "In Stock",
+    "imageUrl": "https://images.unsplash.com/photo-1595515106969-1ce29566ff1c?auto=format&fit=crop&w=1200&q=80",
+    "description": "Standard steel almira with locker."
+  },
+  {
+    "id": "CUPBOARD-002",
+    "name": "Custom Wooden Wardrobe",
+    "category": "cupboard",
+    "price": 45000,
+    "material": "Plywood + Laminate",
+    "dimensions": "Custom Size",
+    "stockStatus": "Made to Order",
+    "imageUrl": "https://images.unsplash.com/photo-1558211583-02eeaa9b8069?auto=format&fit=crop&w=1200&q=80",
+    "description": "Fully customized room-sized wardrobe."
+  },
+  {
+    "id": "TEAPOY-001",
+    "name": "Glass Top Tea Pie",
+    "category": "table",
+    "price": 4500,
+    "material": "Glass + Wood",
+    "dimensions": "36 x 20 x 18 in",
+    "stockStatus": "In Stock",
+    "imageUrl": "https://images.unsplash.com/photo-1533090481720-856c6e3c1fdc?auto=format&fit=crop&w=1200&q=80",
+    "description": "Elegant center table for living room."
+  },
+  {
+    "id": "TEAPOY-002",
+    "name": "Wooden Center Table",
+    "category": "table",
+    "price": 7500,
+    "material": "Solid Wood",
+    "dimensions": "40 x 24 x 18 in",
+    "stockStatus": "In Stock",
+    "imageUrl": "https://images.unsplash.com/photo-1532323544230-7191fd51bc1b?auto=format&fit=crop&w=1200&q=80",
+    "description": "Classic wooden tea pie with lower shelf."
+  },
+  {
+    "id": "BOOKSHELF-001",
+    "name": "Modern Book Shelf",
+    "category": "office",
+    "price": 12000,
+    "material": "Engineered Wood",
+    "dimensions": "72 x 30 x 12 in",
+    "stockStatus": "In Stock",
+    "imageUrl": "https://images.unsplash.com/photo-1594026112284-02bb6f3352fe?auto=format&fit=crop&w=1200&q=80",
+    "description": "Open design modern bookshelf."
+  },
+  {
+    "id": "CHAIR-001",
+    "name": "Plastic Lounge Chair (Set of 2)",
+    "category": "chair",
+    "price": 2500,
+    "material": "High-grade Plastic",
+    "dimensions": "Standard",
+    "stockStatus": "In Stock",
+    "imageUrl": "https://images.unsplash.com/photo-1567538096-b659c25f4838?auto=format&fit=crop&w=1200&q=80",
+    "description": "Durable and lightweight chairs."
+  },
+  {
+    "id": "CHAIR-002",
+    "name": "Iron Folding Chair",
+    "category": "chair",
+    "price": 1200,
+    "material": "Iron + Sponge",
+    "dimensions": "Standard",
+    "stockStatus": "In Stock",
+    "imageUrl": "https://images.unsplash.com/photo-1506898667547-42bf22528496?auto=format&fit=crop&w=1200&q=80",
+    "description": "Portable folding chair."
+  },
+  {
+    "id": "DRESSING-001",
+    "name": "Premium Dressing Table",
+    "category": "table",
+    "price": 15500,
+    "material": "Wood + Mirror",
+    "dimensions": "72 x 36 x 16 in",
+    "stockStatus": "In Stock",
+    "imageUrl": "https://images.unsplash.com/photo-1618219908412-f29904ae7db5?auto=format&fit=crop&w=1200&q=80",
+    "description": "Full height mirror dressing table with drawers."
+  }
+]

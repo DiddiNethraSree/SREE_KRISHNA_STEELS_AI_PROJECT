@@ -1,0 +1,19 @@
+{
+  "name": "furniture-showroom-backend",
+  "version": "1.0.0",
+  "description": "Backend API for furniture showroom website",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "node ./node_modules/nodemon/bin/nodemon.js src/server.js",
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}
