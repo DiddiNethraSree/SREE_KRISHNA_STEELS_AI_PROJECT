@@ -3,10 +3,42 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Catalogue | SREE KRISHNA STEELS</title>
+    <title>Catalogue | SREE KRISHNA STEELS & FURNITURE</title>
+    <style>body { background-color: #101613; color: #f6f0df; margin: 0; }</style>
   </head>
   <body data-page="catalogue">
-    <div id="app"></div>
+    <div id="nav-container"></div>
+    <main class="container main-sections">
+      <section id="catalogue" class="reveal">
+        <div class="section-heading">
+          <div>
+            <p class="tag">Live catalogue</p>
+            <h2>Furniture Catalogue</h2>
+          </div>
+          <div class="controls">
+            <select id="category-filter" aria-label="Filter by category">
+              <option value="all">All Categories</option>
+              <option value="sofa">Sofas</option>
+              <option value="bed">Beds</option>
+              <option value="dining">Dining</option>
+              <option value="office">Office</option>
+              <option value="chair">Chairs</option>
+              <option value="cupboard">Cupboards</option>
+              <option value="table">Tables</option>
+            </select>
+            <input id="search-input" type="search" placeholder="Search product name..." />
+            <select id="sort-filter" aria-label="Sort products">
+              <option value="featured">Featured</option>
+              <option value="price-low">Price: Low to High</option>
+              <option value="price-high">Price: High to Low</option>
+              <option value="name">Name</option>
+            </select>
+          </div>
+        </div>
+        <div id="products-grid" class="products-grid"></div>
+      </section>
+    </main>
+    <div id="footer-container"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

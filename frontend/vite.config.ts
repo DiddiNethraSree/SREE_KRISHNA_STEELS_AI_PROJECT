@@ -8,7 +8,8 @@ export default defineConfig({
         home: path.resolve(__dirname, "index.html"),
         catalogue: path.resolve(__dirname, "catalogue.html"),
         ai: path.resolve(__dirname, "ai-room-designer.html"),
-        contact: path.resolve(__dirname, "contact.html")
+        contact: path.resolve(__dirname, "contact.html"),
+        admin: path.resolve(__dirname, "admin.html")
       }
     }
   }

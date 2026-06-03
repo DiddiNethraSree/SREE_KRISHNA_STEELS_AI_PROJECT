@@ -9,8 +9,12 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 4000;
-const ADMIN_KEY = process.env.ADMIN_KEY || "change-me-admin-key";
+const ADMIN_KEY = process.env.ADMIN_KEY;
 
+if (!ADMIN_KEY) {
+  console.error("CRITICAL ERROR: process.env.ADMIN_KEY is not set. The server cannot start securely.");
+  process.exit(1);
+}
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const dataFilePath = path.join(__dirname, "data", "products.json");
@@ -73,6 +77,53 @@ app.post("/api/products", async (req, res) => {
     res.status(201).json(newProduct);
   } catch (error) {
     res.status(500).json({ message: "Could not add product", error: error.message });
+  }
+});
+
+app.post("/api/products/bulk", async (req, res) => {
+  try {
+    const incomingKey = req.headers["x-admin-key"];
+    if (incomingKey !== ADMIN_KEY) {
+      return res.status(401).json({ message: "Unauthorized: invalid admin key" });
+    }
+
+    const newProducts = req.body;
+    if (!Array.isArray(newProducts)) {
+      return res.status(400).json({ message: "Body must be an array of products" });
+    }
+
+    // Validate each product
+    for (const p of newProducts) {
+      if (!p.name || !p.category || !p.price || !p.material || !p.dimensions || !p.stockStatus || !p.imageUrl) {
+        return res.status(400).json({ message: "Missing required product fields on some items" });
+      }
+    }
+
+    const currentProducts = await readProducts();
+    
+    // Assign IDs and prepare new products list
+    const parsedProducts = newProducts.map((p, index) => {
+      const id = `${p.category.toUpperCase()}-${String(currentProducts.length + index + 1).padStart(3, "0")}`;
+      return {
+        id,
+        name: p.name,
+        category: p.category,
+        price: Number(p.price),
+        material: p.material,
+        dimensions: p.dimensions,
+        stockStatus: p.stockStatus,
+        imageUrl: p.imageUrl,
+        description: p.description || ""
+      };
+    });
+
+    // Add to the front of current products
+    const updatedProducts = [...parsedProducts, ...currentProducts];
+    await writeProducts(updatedProducts);
+
+    res.status(201).json({ message: `Successfully imported ${parsedProducts.length} products`, products: parsedProducts });
+  } catch (error) {
+    res.status(500).json({ message: "Could not bulk import products", error: error.message });
   }
 });
 

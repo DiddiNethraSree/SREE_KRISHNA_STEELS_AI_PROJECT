@@ -1,27 +1,10 @@
-/**
- * AI Room Measurement Module
- * Uses computer vision to detect room dimensions from photos, videos, and sensor data
- * Integrates TensorFlow.js, MediaPipe, and OpenCV for comprehensive room analysis
- */
+import * as tf from "@tensorflow/tfjs";
+import * as cocoSsd from "@tensorflow-models/coco-ssd";
 
-import * as tf from '@tensorflow/tfjs';
-import * as cocoSsd from '@tensorflow/tfjs-coco-ssd';
-
-interface RoomMeasurements {
-  width: number;
-  height: number;
-  depth: number;
-  area: number;
-  perimeter: number;
-  detectedObjects: DetectedObject[];
-  confidence: number;
-  timestamp: Date;
-}
-
-interface DetectedObject {
+export interface DetectedObject {
   class: string;
   confidence: number;
-  bbox: [number, number, number, number];
+  bbox: [number, number, number, number]; // [x, y, width, height]
   estimatedSize?: {
     width: number;
     height: number;
@@ -29,302 +12,242 @@ interface DetectedObject {
   };
 }
 
-class AiRoomMeasurement {
+export interface RoomMeasurements {
+  width: number;       // in meters
+  length: number;      // in meters
+  height: number;      // in meters
+  area: number;        // square meters
+  perimeter: number;   // meters
+  detectedObjects: DetectedObject[];
+  confidence: string;  // "high" | "medium" | "low"
+  notes: string;
+  timestamp: Date;
+}
+
+// Typical dimensions in meters for standard object classes detected by COCO-SSD
+export const STANDARD_OBJECT_SIZES: Record<string, { width: number; height: number; depth: number }> = {
+  sofa: { width: 1.8, height: 0.85, depth: 0.9 },
+  couch: { width: 1.8, height: 0.85, depth: 0.9 },
+  chair: { width: 0.55, height: 0.8, depth: 0.55 },
+  bed: { width: 1.9, height: 0.6, depth: 2.0 },
+  "dining table": { width: 1.5, height: 0.75, depth: 0.9 },
+  person: { width: 0.5, height: 1.7, depth: 0.35 },
+  tv: { width: 1.1, height: 0.65, depth: 0.1 },
+  refrigerator: { width: 0.75, height: 1.75, depth: 0.7 },
+  laptop: { width: 0.35, height: 0.25, depth: 0.25 },
+  pottedplant: { width: 0.45, height: 0.6, depth: 0.45 },
+  backpack: { width: 0.35, height: 0.48, depth: 0.2 },
+  suitcase: { width: 0.45, height: 0.68, depth: 0.25 },
+  bottle: { width: 0.08, height: 0.25, depth: 0.08 }
+};
+
+export class AiRoomMeasurement {
   private model: cocoSsd.ObjectDetection | null = null;
-  private canvas: HTMLCanvasElement | null = null;
-  private ctx: CanvasRenderingContext2D | null = null;
-  private video: HTMLVideoElement | null = null;
-  private referenceSize = 0.5; // Default reference object size in meters
+  private isModelLoading = false;
 
-  constructor() {
-    this.initializeModel();
-  }
+  constructor() {}
 
   /**
-   * Initialize TensorFlow.js and load pre-trained models
+   * Initializes the TensorFlow.js and COCO-SSD model.
+   * @param onProgress Callback for loading status
    */
-  private async initializeModel(): Promise<void> {
+  async initModel(onProgress?: (status: string) => void): Promise<cocoSsd.ObjectDetection> {
+    if (this.model) return this.model;
+    if (this.isModelLoading) {
+      while (!this.model) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      return this.model;
+    }
+
+    this.isModelLoading = true;
     try {
+      if (onProgress) onProgress("Initializing TensorFlow backend...");
       await tf.ready();
-      this.model = await cocoSsd.load();
-      console.log('AI Room Measurement Model loaded successfully');
-    } catch (error) {
-      console.error('Failed to load model:', error);
-    }
-  }
-
-  /**
-   * Analyze a static image for room measurements
-   */
-  async analyzeImage(imageSource: string | File | HTMLImageElement): Promise<RoomMeasurements> {
-    if (!this.model) {
-      throw new Error('Model not initialized. Please wait for initialization to complete.');
-    }
-
-    let img: HTMLImageElement;
-
-    if (imageSource instanceof File) {
-      img = await this.fileToImage(imageSource);
-    } else if (typeof imageSource === 'string') {
-      img = await this.urlToImage(imageSource);
-    } else {
-      img = imageSource;
-    }
-
-    // Run object detection
-    const predictions = await this.model.detect(img);
-
-    // Calculate room measurements from detected objects
-    const measurements = this.calculateMeasurements(predictions, img);
-
-    return measurements;
-  }
-
-  /**
-   * Analyze video stream for real-time room measurements
-   */
-  async startVideoAnalysis(
-    videoElement: HTMLVideoElement,
-    onUpdate: (measurements: RoomMeasurements) => void,
-    fps: number = 10
-  ): Promise<void> {
-    if (!this.model) {
-      throw new Error('Model not initialized');
-    }
-
-    this.video = videoElement;
-    const interval = 1000 / fps;
-
-    const analyzeFrame = async () => {
-      if (this.video && this.video.readyState === this.video.HAVE_ENOUGH_DATA) {
+      
+      // Force WebGL backend if available, otherwise fallback to CPU
+      const backends = ["webgl", "cpu"];
+      for (const backend of backends) {
         try {
-          const predictions = await this.model!.detect(this.video);
-          const measurements = this.calculateMeasurements(predictions, this.video);
-          onUpdate(measurements);
-        } catch (error) {
-          console.error('Error analyzing video frame:', error);
+          await tf.setBackend(backend);
+          console.log(`Using TFJS Backend: ${backend}`);
+          break;
+        } catch (e) {
+          console.warn(`TFJS Backend ${backend} initialization failed:`, e);
         }
       }
 
-      setTimeout(analyzeFrame, interval);
-    };
-
-    // Start camera access
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' },
-        audio: false,
-      });
-      this.video.srcObject = stream;
-      this.video.play();
-      analyzeFrame();
+      if (onProgress) onProgress("Downloading COCO-SSD model weights (~5MB)...");
+      this.model = await cocoSsd.load({ base: "lite_mobilenet_v2" });
+      
+      if (onProgress) onProgress("AI Model ready!");
+      console.log("COCO-SSD model loaded successfully");
+      return this.model;
     } catch (error) {
-      console.error('Failed to access camera:', error);
+      console.error("Error loading TFJS COCO-SSD model", error);
+      this.isModelLoading = false;
       throw error;
     }
   }
 
   /**
-   * Stop video analysis
+   * Detects objects in an image, canvas, or video element.
    */
-  stopVideoAnalysis(): void {
-    if (this.video && this.video.srcObject) {
-      const stream = this.video.srcObject as MediaStream;
-      stream.getTracks().forEach((track) => track.stop());
-      this.video.srcObject = null;
-    }
-  }
+  async detectObjects(imageSource: HTMLImageElement | HTMLVideoElement | HTMLCanvasElement | ImageData): Promise<DetectedObject[]> {
+    const model = await this.initModel();
+    const rawPredictions = await model.detect(imageSource);
 
-  /**
-   * Calculate room dimensions from detected objects
-   */
-  private calculateMeasurements(
-    predictions: Array<{ class: string; score: number; bbox: [number, number, number, number] }>,
-    source: HTMLImageElement | HTMLVideoElement
-  ): RoomMeasurements {
-    const roomObjects = this.identifyRoomObjects(predictions);
-    const walls = this.detectWalls(predictions, source);
-
-    // Estimate dimensions based on detected furniture and walls
-    const estimatedDimensions = this.estimateDimensions(roomObjects, walls, source);
-
-    // Calculate area and perimeter
-    const area = estimatedDimensions.width * estimatedDimensions.depth;
-    const perimeter = 2 * (estimatedDimensions.width + estimatedDimensions.depth);
-
-    // Calculate average confidence
-    const avgConfidence =
-      predictions.length > 0 ? predictions.reduce((sum, p) => sum + p.score, 0) / predictions.length : 0;
-
-    return {
-      width: parseFloat(estimatedDimensions.width.toFixed(2)),
-      height: parseFloat(estimatedDimensions.height.toFixed(2)),
-      depth: parseFloat(estimatedDimensions.depth.toFixed(2)),
-      area: parseFloat(area.toFixed(2)),
-      perimeter: parseFloat(perimeter.toFixed(2)),
-      detectedObjects: roomObjects,
-      confidence: parseFloat((avgConfidence * 100).toFixed(2)),
-      timestamp: new Date(),
-    };
-  }
-
-  /**
-   * Identify furniture and room objects
-   */
-  private identifyRoomObjects(
-    predictions: Array<{ class: string; score: number; bbox: [number, number, number, number] }>
-  ): DetectedObject[] {
-    const furnitureClasses = [
-      'sofa',
-      'chair',
-      'bed',
-      'table',
-      'desk',
-      'cabinet',
-      'shelves',
-      'door',
-      'window',
-      'person',
-    ];
-
-    return predictions
-      .filter((p) => furnitureClasses.includes(p.class.toLowerCase()) && p.score > 0.5)
-      .map((p) => ({
+    return rawPredictions.map((p: any) => {
+      const size = STANDARD_OBJECT_SIZES[p.class];
+      return {
         class: p.class,
-        confidence: parseFloat((p.score * 100).toFixed(2)),
-        bbox: p.bbox,
-        estimatedSize: this.estimateObjectSize(p),
-      }));
-  }
-
-  /**
-   * Detect walls from the image
-   */
-  private detectWalls(
-    predictions: Array<{ class: string; score: number; bbox: [number, number, number, number] }>,
-    source: HTMLImageElement | HTMLVideoElement
-  ): { top: number; bottom: number; left: number; right: number } {
-    // Heuristic: walls are typically at image boundaries and have large areas
-    let wallBounds = {
-      top: 0,
-      bottom: source.height,
-      left: 0,
-      right: source.width,
-    };
-
-    predictions.forEach((p) => {
-      const [x, y, width, height] = p.bbox;
-      // Adjust wall bounds based on detected objects
-      if (p.class.toLowerCase() === 'window' || p.class.toLowerCase() === 'door') {
-        // Don't use windows/doors as wall reference
-        return;
-      }
+        confidence: Math.round(p.score * 100),
+        bbox: p.bbox as [number, number, number, number],
+        estimatedSize: size ? { ...size } : undefined
+      };
     });
-
-    return wallBounds;
   }
 
   /**
-   * Estimate room dimensions from detected objects and walls
+   * Auto-calibrates scale (pixels-to-meters) based on detected objects.
+   * Chooses the highest confidence object with standard dimensions.
    */
-  private estimateDimensions(
-    roomObjects: DetectedObject[],
-    walls: { top: number; bottom: number; left: number; right: number },
-    source: HTMLImageElement | HTMLVideoElement
-  ): { width: number; height: number; depth: number } {
-    // Find reference objects (typically furniture with known dimensions)
-    const referenceObject = roomObjects.find(
-      (obj) =>
-        obj.class.toLowerCase() === 'sofa' ||
-        obj.class.toLowerCase() === 'bed' ||
-        obj.class.toLowerCase() === 'table'
-    );
+  calculateScaleFromObjects(
+    detectedObjects: DetectedObject[],
+    canvasWidth: number
+  ): { pixelsPerMeter: number; referenceObject: DetectedObject | null } {
+    let bestObj: DetectedObject | null = null;
+    let maxConfidence = -1;
 
-    let pixelToMeterRatio = 1;
-    if (referenceObject) {
-      const refBbox = referenceObject.bbox;
-      const refPixelWidth = refBbox[2];
-      pixelToMeterRatio = this.referenceSize / refPixelWidth;
+    for (const obj of detectedObjects) {
+      if (STANDARD_OBJECT_SIZES[obj.class] && obj.confidence > maxConfidence) {
+        maxConfidence = obj.confidence;
+        bestObj = obj;
+      }
     }
 
-    // Calculate dimensions in meters
-    const width = (walls.right - walls.left) * pixelToMeterRatio;
-    const depth = (walls.bottom - walls.top) * pixelToMeterRatio;
-    const height = Math.min(width, depth) * 0.8; // Estimate height (typically 2.5-3m)
+    if (!bestObj) {
+      // Default fallback scale: Assume a standard photo width is roughly 4.5 meters
+      return { pixelsPerMeter: canvasWidth / 4.5, referenceObject: null };
+    }
+
+    const stdWidth = STANDARD_OBJECT_SIZES[bestObj.class].width;
+    const pixelWidth = bestObj.bbox[2];
+    const pixelsPerMeter = pixelWidth / stdWidth;
+
+    return { pixelsPerMeter, referenceObject: bestObj };
+  }
+
+  /**
+   * Calculates a 3D coordinate (relative to camera position) of a point on the floor.
+   * Uses trigonometry based on holding height and pitch/roll.
+   * 
+   * @param canvasX X pixel coordinate of the point on the canvas
+   * @param canvasY Y pixel coordinate of the point on the canvas
+   * @param canvasWidth Width of the canvas in pixels
+   * @param canvasHeight Height of the canvas in pixels
+   * @param heightM Camera height from the floor in meters (e.g., 1.5m)
+   * @param pitchDeg Camera tilt down from horizontal in degrees (0 = horizontal, positive is tilting down)
+   * @param rollDeg Camera side-to-side roll in degrees (left/right tilt)
+   */
+  calculate3DPoint(
+    canvasX: number,
+    canvasY: number,
+    canvasWidth: number,
+    canvasHeight: number,
+    heightM: number,
+    pitchDeg: number,
+    _rollDeg = 0
+  ): { x: number; y: number; z: number; distance: number } {
+    // 1. Center of canvas
+    const cx = canvasWidth / 2;
+    const cy = canvasHeight / 2;
+
+    // 2. Camera FOV setup (standard mobile camera has ~60 deg horizontal, ~45 deg vertical FOV)
+    const fovH = 60 * (Math.PI / 180);
+    const fx = cx / Math.tan(fovH / 2); // Focal length in horizontal pixels
+    const fy = fx; // Assume square pixels
+
+    // 3. Pixel offsets from optical center
+    const dx = canvasX - cx;
+    const dy = cy - canvasY; // canvas Y goes down, but in standard coords up is positive
+
+    // 4. Angular deviations relative to camera axis
+    const angleX = Math.atan(dx / fx); // Yaw offset
+    const angleY = Math.atan(dy / fy); // Pitch offset
+
+    // 5. Adjust for camera's actual physical pitch angle
+    const totalPitch = (pitchDeg * (Math.PI / 180)) - angleY;
+
+    // Avoid division by zero or negative pitch (meaning point is above horizon line)
+    const clampedPitch = Math.max(0.02, Math.min(Math.PI / 2 - 0.02, totalPitch));
+
+    // 6. Compute distance (depth along floor)
+    // Z is depth (forward distance)
+    const z = heightM / Math.tan(clampedPitch);
+    
+    // X is horizontal lateral distance (perpendicular to depth)
+    const x = z * Math.sin(angleX);
+
+    // Y is vertical (which is on the floor, so it is -heightM relative to camera)
+    const y = -heightM;
+
+    const distance = Math.sqrt(x * x + z * z);
+
+    return { x, y, z, distance };
+  }
+
+  /**
+   * Computes final room measurements based on object scaling
+   */
+  estimateRoomDimensionsFromScale(
+    pixelsPerMeter: number,
+    canvasWidth: number,
+    canvasHeight: number,
+    referenceObject: DetectedObject | null
+  ): RoomMeasurements {
+    // Basic room dimensions layout in pixels (based on typical image proportions)
+    // A standard room's width in the photo spans roughly 80% to 100% of the canvas width
+    // Height spans from ceiling to floor (roughly 70% of canvas height)
+    // Depth extends into the background (roughly 90% of canvas width in perspective)
+    
+    let baseWidth = canvasWidth * 0.9;
+    let baseHeight = canvasHeight * 0.75;
+    let baseLength = canvasWidth * 1.1;
+
+    // Estimate based on scale
+    let width = Number((baseWidth / pixelsPerMeter).toFixed(2));
+    let height = Number((baseHeight / pixelsPerMeter).toFixed(2));
+    let length = Number((baseLength / pixelsPerMeter).toFixed(2));
+
+    // Limit to reasonable room bounds
+    width = Math.max(2.0, Math.min(12.0, width));
+    height = Math.max(2.2, Math.min(5.0, height));
+    length = Math.max(2.0, Math.min(15.0, length));
+
+    const area = Number((width * length).toFixed(2));
+    const perimeter = Number((2 * (width + length)).toFixed(2));
+
+    let notes = "Estimated automatically via computer vision scale analysis.";
+    let confidence: "high" | "medium" | "low" = "low";
+
+    if (referenceObject) {
+      notes = `Scale auto-calibrated using detected: ${referenceObject.class} (${referenceObject.confidence}% confidence).`;
+      confidence = referenceObject.confidence > 75 ? "high" : "medium";
+    } else {
+      notes = "No standard furniture detected for scaling. Using default camera frustum estimation.";
+    }
 
     return {
-      width: Math.max(width, 2), // Minimum 2 meters
-      height: Math.max(height, 2.4),
-      depth: Math.max(depth, 2),
+      width,
+      length,
+      height,
+      area,
+      perimeter,
+      detectedObjects: [], // Populated by caller
+      confidence,
+      notes,
+      timestamp: new Date()
     };
-  }
-
-  /**
-   * Estimate object size based on detected bounding box
-   */
-  private estimateObjectSize(prediction: { bbox: [number, number, number, number] }): {
-    width: number;
-    height: number;
-    depth: number;
-  } {
-    const [, , width, height] = prediction.bbox;
-
-    // Rough estimation based on pixel dimensions
-    // These are estimates and would be more accurate with reference objects
-    const estimatedWidth = width * 0.01; // Convert to approximate meters
-    const estimatedHeight = height * 0.01;
-    const estimatedDepth = height * 0.005; // Depth is typically less than height
-
-    return {
-      width: parseFloat(estimatedWidth.toFixed(2)),
-      height: parseFloat(estimatedHeight.toFixed(2)),
-      depth: parseFloat(estimatedDepth.toFixed(2)),
-    };
-  }
-
-  /**
-   * Convert image file to HTMLImageElement
-   */
-  private fileToImage(file: File): Promise<HTMLImageElement> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => resolve(img);
-        img.onerror = reject;
-        img.src = e.target?.result as string;
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-  }
-
-  /**
-   * Convert image URL to HTMLImageElement
-   */
-  private urlToImage(url: string): Promise<HTMLImageElement> {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = () => resolve(img);
-      img.onerror = reject;
-      img.src = url;
-    });
-  }
-
-  /**
-   * Set reference object size for more accurate measurements
-   */
-  setReferenceSize(sizeInMeters: number): void {
-    this.referenceSize = sizeInMeters;
-  }
-
-  /**
-   * Get model status
-   */
-  isModelReady(): boolean {
-    return this.model !== null;
   }
 }
-
-export { AiRoomMeasurement, RoomMeasurements, DetectedObject };

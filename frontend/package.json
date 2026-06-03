@@ -11,9 +11,8 @@
   "dependencies": {
     "@mediapipe/tasks-vision": "^0.10.8",
     "@tensorflow/tfjs": "^4.17.0",
-    "@tensorflow/tfjs-coco-ssd": "^2.2.5",
-    "chart.js": "^4.4.1",
-    "opencv-js": "^4.5.2"
+    "@tensorflow-models/coco-ssd": "^2.2.3",
+    "chart.js": "^4.4.1"
   },
   "devDependencies": {
     "typescript": "~6.0.2",

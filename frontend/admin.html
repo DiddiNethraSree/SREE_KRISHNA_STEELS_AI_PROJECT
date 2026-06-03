@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Dashboard | SREE KRISHNA STEELS & FURNITURE</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <style>body { background-color: #101613; color: #f6f0df; margin: 0; }</style>
+  </head>
+  <body data-page="admin">
+
+    <!-- Passcode Auth Overlay -->
+    <div id="admin-auth-overlay" class="auth-overlay">
+      <div class="auth-card">
+        <div class="auth-logo">
+          <img src="/branding/d-furniture-logo-centered.jpg" alt="D Furniture logo" />
+        </div>
+        <h2>Admin Portal Access</h2>
+        <p>Please enter the secret Admin Passcode to manage the showroom inventory.</p>
+        <form id="admin-login-form">
+          <input type="password" id="admin-passcode-input" placeholder="Enter passcode" required />
+          <button type="submit" class="primary-btn" style="width: 100%; margin-top: 0.8rem;">Unlock Dashboard</button>
+        </form>
+        <p id="auth-error-msg" class="auth-error" style="display:none">⚠️ Invalid Passcode. Please try again.</p>
+      </div>
+    </div>
+
+    <!-- Main Admin Dashboard -->
+    <div id="admin-dashboard" style="display:none">
+      <header class="admin-header">
+        <div class="container admin-header-inner">
+          <a class="brand" href="/index.html">
+            <img src="/branding/d-furniture-logo-centered.jpg" alt="D Furniture logo" />
+            <p><span class="company-line">SREE KRISHNA STEELS & FURNITURE</span> <span class="showroom-badge">D FURNITURE</span></p>
+          </a>
+          <div class="header-actions">
+            <span class="admin-status-pill">🔑 System Admin</span>
+            <button id="admin-logout-btn" class="ghost-btn">Logout</button>
+          </div>
+        </div>
+      </header>
+
+      <main class="container admin-main">
+        <section class="admin-intro">
+          <h2>Inventory Management Dashboard</h2>
+          <p>Add new products, bulk import from Excel CSV spreadsheets, and manage the live stock catalog.</p>
+        </section>
+
+        <!-- Stats Section -->
+        <section class="admin-stats-grid">
+          <article class="stat-card">
+            <strong id="stat-total-products">0</strong>
+            <span>Total Catalog Products</span>
+          </article>
+          <article class="stat-card">
+            <strong id="stat-categories">0</strong>
+            <span>Active Categories</span>
+          </article>
+          <article class="stat-card">
+            <strong id="stat-out-of-stock" style="color: #ff4444;">0</strong>
+            <span>Out of Stock Items</span>
+          </article>
+        </section>
+
+        <div class="admin-workspace">
+          <!-- Left Column: Add Product & CSV Import -->
+          <div class="workspace-sidebar">
+            <!-- Add Single Product Form -->
+            <section class="admin-card">
+              <h3>🛋️ Add Single Product</h3>
+              <form id="add-product-form">
+                <div class="form-group">
+                  <label for="prod-name">Product Name *</label>
+                  <input type="text" id="prod-name" required placeholder="e.g. Luxury 3-Seater Sofa" />
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="prod-category">Category *</label>
+                    <select id="prod-category" required>
+                      <option value="">Select Category</option>
+                      <option value="sofa">Sofa</option>
+                      <option value="bed">Bed</option>
+                      <option value="dining">Dining</option>
+                      <option value="office">Office</option>
+                      <option value="chair">Chair</option>
+                      <option value="cupboard">Cupboard</option>
+                      <option value="table">Table</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="prod-price">Price (₹) *</label>
+                    <input type="number" id="prod-price" required placeholder="e.g. 24500" />
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="prod-material">Material *</label>
+                    <input type="text" id="prod-material" required placeholder="e.g. Teak Wood / Steel" />
+                  </div>
+                  <div class="form-group">
+                    <label for="prod-dimensions">Dimensions *</label>
+                    <input type="text" id="prod-dimensions" required placeholder="e.g. 6x3 ft / 72x36x30 in" />
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="prod-stock">Stock Status *</label>
+                    <select id="prod-stock" required>
+                      <option value="In Stock">In Stock</option>
+                      <option value="Out of Stock">Out of Stock</option>
+                      <option value="Custom Order">Custom Order</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="prod-image">Image URL *</label>
+                    <input type="text" id="prod-image" required placeholder="https://images.unsplash.com/..." />
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="prod-desc">Description</label>
+                  <textarea id="prod-desc" rows="3" placeholder="Describe the wood grade, fabric color, foam density, etc."></textarea>
+                </div>
+                <button type="submit" class="primary-btn" style="width: 100%; margin-top: 0.5rem;">Save Product</button>
+              </form>
+              <p id="form-feedback" class="feedback-msg" style="display:none"></p>
+            </section>
+
+            <!-- CSV Bulk Importer -->
+            <section class="admin-card">
+              <h3>📊 Excel CSV Bulk Importer</h3>
+              <p>Import hundreds of items instantly using a spreadsheet saved as a <code>.csv</code> file.</p>
+              
+              <div class="csv-template-box">
+                <strong>CSV Headers Format:</strong>
+                <pre>Name,Category,Price,Material,Dimensions,StockStatus,ImageUrl,Description</pre>
+                <button id="download-csv-template" class="secondary-btn" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; margin-top: 0.5rem;">⬇️ Download Sample CSV Template</button>
+              </div>
+
+              <div id="csv-drag-area" class="csv-drop-zone">
+                <span class="drop-icon">📂</span>
+                <strong>Drag & drop CSV file here</strong>
+                <span>or click to select file from computer</span>
+                <input type="file" id="csv-file-input" accept=".csv" style="display:none;" />
+              </div>
+              <p id="csv-feedback" class="feedback-msg" style="display:none"></p>
+            </section>
+          </div>
+
+          <!-- Right Column: Catalog Grid/Table -->
+          <div class="workspace-main">
+            <section class="admin-card catalog-manager">
+              <div class="catalog-header">
+                <h3>📋 Showroom Catalog Manager</h3>
+                <div class="catalog-filters">
+                  <input type="text" id="catalog-search" placeholder="Search catalog..." />
+                  <select id="catalog-category-filter">
+                    <option value="all">All Categories</option>
+                    <option value="sofa">Sofas</option>
+                    <option value="bed">Beds</option>
+                    <option value="dining">Dining</option>
+                    <option value="office">Office</option>
+                    <option value="chair">Chairs</option>
+                    <option value="cupboard">Cupboards</option>
+                    <option value="table">Tables</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="table-container">
+                <table class="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Image</th>
+                      <th>Product Details</th>
+                      <th>Category</th>
+                      <th>Price</th>
+                      <th>Stock Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="catalog-table-body">
+                    <tr>
+                      <td colspan="6" style="text-align:center; padding: 2rem; color: var(--muted);">Loading catalog inventory...</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Edit Product Modal -->
+    <div id="edit-product-modal" class="modal-overlay" style="display:none">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>✍️ Edit Product Info</h3>
+          <button id="close-edit-modal" class="close-btn">✕</button>
+        </div>
+        <form id="edit-product-form">
+          <input type="hidden" id="edit-prod-id" />
+          <div class="form-group">
+            <label for="edit-prod-name">Product Name *</label>
+            <input type="text" id="edit-prod-name" required />
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="edit-prod-category">Category *</label>
+              <select id="edit-prod-category" required>
+                <option value="sofa">Sofa</option>
+                <option value="bed">Bed</option>
+                <option value="dining">Dining</option>
+                <option value="office">Office</option>
+                <option value="chair">Chair</option>
+                <option value="cupboard">Cupboard</option>
+                <option value="table">Table</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="edit-prod-price">Price (₹) *</label>
+              <input type="number" id="edit-prod-price" required />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="edit-prod-material">Material *</label>
+              <input type="text" id="edit-prod-material" required />
+            </div>
+            <div class="form-group">
+              <label for="edit-prod-dimensions">Dimensions *</label>
+              <input type="text" id="edit-prod-dimensions" required />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="edit-prod-stock">Stock Status *</label>
+              <select id="edit-prod-stock" required>
+                <option value="In Stock">In Stock</option>
+                <option value="Out of Stock">Out of Stock</option>
+                <option value="Custom Order">Custom Order</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="edit-prod-image">Image URL *</label>
+              <input type="text" id="edit-prod-image" required />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="edit-prod-desc">Description</label>
+            <textarea id="edit-prod-desc" rows="3"></textarea>
+          </div>
+          <button type="submit" class="primary-btn" style="width: 100%; margin-top: 0.5rem;">Save Changes</button>
+        </form>
+      </div>
+    </div>
+
+    <script type="module" src="/src/admin.ts"></script>
+  </body>
+</html>

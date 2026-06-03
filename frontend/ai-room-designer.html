@@ -3,10 +3,295 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AI Room Designer | SREE KRISHNA STEELS</title>
+    <title>AI Room Designer | SREE KRISHNA STEELS & FURNITURE</title>
+    <style>body { background-color: #101613; color: #f6f0df; margin: 0; }</style>
   </head>
   <body data-page="ai">
-    <div id="app"></div>
+    <div id="nav-container"></div>
+    <main class="container main-sections">
+
+      <!-- SECTION 1: AI Room Dimension Analyser -->
+      <section class="measure-section reveal">
+        <div class="measure-hero">
+          <span class="section-tag-pill">🤖 AI Room Measurements</span>
+          <h2>AI Room Measurement</h2>
+          <p>Scan your room in real-time. Use Computer Vision to detect furniture scale or use camera sensor data to measure walls and space dimensions instantly.</p>
+        </div>
+
+        <!-- Mode Tabs -->
+        <div class="measure-nav-tabs">
+          <button class="measure-tab-btn active" id="tab-btn-photo" type="button">📷 Photo Upload</button>
+          <button class="measure-tab-btn" id="tab-btn-video" type="button">🎥 Video Analysis</button>
+          <button class="measure-tab-btn" id="tab-btn-live" type="button">📹 Live Camera & Sensors</button>
+        </div>
+
+        <!-- Drop Area / Input Panel -->
+        <div class="measure-upload-container">
+          <!-- Photo Panel -->
+          <div class="measure-upload-area tab-content active" id="panel-photo">
+            <input class="hidden-file-input" type="file" id="measure-file" accept="image/jpeg,image/png,image/webp" />
+            <span class="upload-icon">📷</span>
+            <strong>Upload a room photo</strong>
+            <p class="upload-hint">JPG, PNG or WEBP. Wide-angle photos containing furniture work best.</p>
+            <button class="primary-btn" type="button" id="choose-room-photo">Choose File</button>
+          </div>
+
+          <!-- Video Panel -->
+          <div class="measure-upload-area tab-content" id="panel-video" style="display:none">
+            <input class="hidden-file-input" type="file" id="measure-video-file" accept="video/mp4,video/webm,video/ogg" />
+            <span class="upload-icon">🎥</span>
+            <strong>Select a room scanning video</strong>
+            <p class="upload-hint">MP4 or WebM video. Slowly pan around the room to capture corners.</p>
+            <button class="primary-btn" type="button" id="choose-room-video">Choose Video</button>
+          </div>
+
+          <!-- Live Camera Panel -->
+          <div class="measure-upload-area tab-content" id="panel-live" style="display:none">
+            <span class="upload-icon">📹</span>
+            <strong>Live Camera & Pitch Sensors</strong>
+            <p class="upload-hint">Estimate distances using device tilt sensors and camera height calibration.</p>
+            <div class="camera-select-row" style="margin-bottom:0.8rem;">
+              <select id="webcam-select" style="min-height:36px; padding:0.2rem 0.5rem; background:#f9f0dc; color:#17231d; border-radius:8px; display:none;"></select>
+            </div>
+            <button class="primary-btn" type="button" id="start-live-btn">🔌 Start Webcam Stream</button>
+          </div>
+
+          <p class="upload-status" id="measure-upload-status">Select a source to begin AI scanning.</p>
+        </div>
+
+        <!-- Main Workspace (Hidden until file loaded or camera active) -->
+        <div class="measure-layout" id="measure-layout" style="display:none">
+          <div class="measure-preview">
+            <!-- Canvas where images / video frames are drawn and overlays rendered -->
+            <canvas id="measure-canvas"></canvas>
+            <video id="measure-video-element" style="display:none" playsinline loop></video>
+            
+            <!-- Floating loading/model init display -->
+            <div class="model-loading-overlay" id="model-loader" style="display:none">
+              <div class="spinner"></div>
+              <p id="model-loader-text">Loading COCO-SSD computer vision model...</p>
+            </div>
+          </div>
+
+          <div class="measure-controls-sidebar">
+            <!-- Sensor parameters: visible in live camera tab -->
+            <div class="calibration-panel" id="sensor-panel" style="display:none">
+              <h4>📐 Sensor Calibration & Aiming</h4>
+              <p style="font-size:0.82rem; margin-bottom:0.8rem;">Tilt camera and point crosshair at the floor-wall corners to pin points.</p>
+              
+              <label>Holding Height (Camera height from floor)
+                <div style="display:flex; align-items:center; gap:0.5rem">
+                  <input id="sensor-height" type="range" min="1.0" max="2.5" step="0.05" value="1.5" style="flex:1;" />
+                  <span id="sensor-height-val" style="width:40px; font-weight:bold; color:var(--gold)">1.50m</span>
+                </div>
+              </label>
+              
+              <label>Virtual Camera Tilt (Pitch)
+                <div style="display:flex; align-items:center; gap:0.5rem">
+                  <input id="sensor-pitch" type="range" min="0" max="80" step="1" value="30" style="flex:1;" />
+                  <span id="sensor-pitch-val" style="width:40px; font-weight:bold; color:var(--gold)">30°</span>
+                </div>
+              </label>
+
+              <!-- Pin buttons -->
+              <div class="pin-actions-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:0.4rem; margin-top:0.6rem;">
+                <button class="preset-btn" type="button" id="pin-depth-btn">📍 Pin Wall Base</button>
+                <button class="preset-btn" type="button" id="pin-left-btn">📍 Pin Left Wall</button>
+                <button class="preset-btn" type="button" id="pin-right-btn">📍 Pin Right Wall</button>
+                <button class="preset-btn" type="button" id="pin-height-btn">📍 Pin Ceiling</button>
+              </div>
+              <button class="ghost-btn" type="button" id="clear-pins-btn" style="margin-top:0.4rem; padding:0.3rem; width:100%;">Clear Pins</button>
+            </div>
+
+            <!-- AI Operations -->
+            <div class="measure-actions-column">
+              <button class="analyze-btn" id="analyze-btn" type="button">🔍 Run AI Object Detection</button>
+              <button class="secondary-btn" id="refine-gemini-btn" type="button" style="margin-top:0.5rem; width:100%; border-color:#d7a63b; color:#d7a63b;">✨ Refine with Gemini Vision</button>
+              
+              <!-- Recommendations / placement linking -->
+              <div id="spawn-furniture-block" style="display:none; margin-top:0.8rem; border:1px solid rgba(231,199,122,0.2); padding:0.8rem; border-radius:12px; background:rgba(231,199,122,0.05);">
+                <p style="font-size:0.82rem; margin:0 0 0.4rem; color:var(--gold); font-weight:bold;">🛋&nbsp;Furniture Scale Actions</p>
+                <div id="spawn-buttons-container" style="display:flex; flex-direction:column; gap:0.4rem;"></div>
+              </div>
+
+              <!-- Measurements table -->
+              <div id="measure-result" class="measure-result-card" style="margin-top:0.8rem; display:none;">
+                <h3>📐 AI Room Measurements</h3>
+                <div style="font-size:0.8rem; color:var(--muted); margin-bottom:0.4rem;">Auto-calibrated scale: <span id="auto-scale-display">Calculating...</span></div>
+                <table class="dim-table">
+                  <thead><tr><th>Dimension</th><th>Feet</th><th>Meters</th></tr></thead>
+                  <tbody>
+                    <tr><td>Width</td><td><strong id="dim-w-ft">-</strong></td><td id="dim-w-m">-</td></tr>
+                    <tr><td>Length/Depth</td><td><strong id="dim-l-ft">-</strong></td><td id="dim-l-m">-</td></tr>
+                    <tr><td>Height</td><td><strong id="dim-h-ft">-</strong></td><td id="dim-h-m">-</td></tr>
+                    <tr><td>Floor Area</td><td><strong id="dim-area-ft">-</strong></td><td id="dim-area-m">-</td></tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Trend Chart -->
+              <div class="chart-panel" style="margin-top:0.8rem; border:1px solid var(--line); border-radius:18px; padding:0.8rem; background:rgba(16,22,19,0.52);">
+                <h4 style="font-size:0.85rem; margin:0 0 0.5rem; display:flex; justify-content:space-between;">
+                  <span>📈 Real-Time Trends</span>
+                  <span id="chart-frames-count" style="font-size:0.75rem; color:var(--muted)">0 frames</span>
+                </h4>
+                <div style="position:relative; height:150px; width:100%;">
+                  <canvas id="measure-trend-chart"></canvas>
+                </div>
+              </div>
+
+              <div class="workspace-presets" style="display:flex; gap:0.5rem; margin-top:0.8rem;">
+                <button class="ghost-btn" id="download-btn" type="button" style="flex:1;">⬇ Save Pic</button>
+                <button class="ghost-btn" id="reset-btn" type="button" style="flex:1; border-color:#bb1e2d; color:#bb1e2d;">↺ Reset</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- SECTION 2: Enhanced AR Room Preview -->
+      <section class="ar-preview reveal">
+        <div class="ar-controls-panel">
+          <span class="section-tag-pill">🛋️ Visual Preview</span>
+          <h2>Camera Room Preview</h2>
+          <p>Place furniture inside your room photo. Drag sliders to position, resize, rotate and add 3D depth to furniture.</p>
+
+          <div class="ar-upload-row">
+            <label class="ar-upload-btn">
+              📁 Upload Room Photo
+              <input id="room-upload" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" style="display:none" />
+            </label>
+            <button class="ar-upload-btn secondary" type="button" id="capture-preview-photo">📷 Use Camera</button>
+            <input class="hidden-file-input" id="room-camera-upload" type="file" accept="image/*" capture="environment" />
+          </div>
+
+          <div class="ar-furniture-select">
+            <label>🪑 Select Furniture</label>
+            <select id="furniture-select"></select>
+          </div>
+
+          <div class="ar-sliders-grid">
+            <div class="slider-group">
+              <label>↔ Position X <span id="pos-x-val">20%</span></label>
+              <input id="pos-x" type="range" min="0" max="80" value="20" />
+            </div>
+            <div class="slider-group">
+              <label>↕ Position Y <span id="pos-y-val">45%</span></label>
+              <input id="pos-y" type="range" min="0" max="80" value="45" />
+            </div>
+            <div class="slider-group">
+              <label>⤡ Scale <span id="scale-val">100%</span></label>
+              <input id="scale" type="range" min="30" max="200" value="100" />
+            </div>
+            <div class="slider-group">
+              <label>↻ Rotate 360° <span id="rotate-val">0°</span></label>
+              <input id="rotate" type="range" min="0" max="360" value="0" />
+            </div>
+            <div class="slider-group">
+              <label>📦 3D Depth <span id="depth-val">20</span></label>
+              <input id="depth" type="range" min="-80" max="80" value="20" />
+            </div>
+            <div class="slider-group">
+              <label>📐 3D Tilt <span id="tilt-val">8°</span></label>
+              <input id="tilt" type="range" min="-20" max="20" value="8" />
+            </div>
+          </div>
+
+          <div class="ar-preset-btns">
+            <button class="preset-btn" type="button" id="center-preview">⊙ Center</button>
+            <button class="preset-btn" type="button" id="pose-preview">🎯 3D Pose</button>
+            <button class="preset-btn" type="button" id="reset-preview">↺ Reset</button>
+            <button class="preset-btn" type="button" id="download-preview">⬇ Save</button>
+          </div>
+        </div>
+
+        <div class="ar-canvas-panel">
+          <div class="room-scene" id="room-scene">
+            <img id="room-image" class="room-image" src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1400&q=80" alt="Room" />
+            <div class="floor-grid"></div>
+            <div id="furniture-floor-ring" class="furniture-floor-ring"></div>
+            <img id="furniture-overlay" class="furniture-overlay" alt="Furniture overlay" />
+          </div>
+          <p class="ar-tip">💡 Upload your room photo above, then select furniture to preview it inside your room!</p>
+        </div>
+      </section>
+
+      <!-- SECTION 3: Enhanced AI Recommendation -->
+      <section class="ai-room-designer reveal">
+        <div class="ai-info">
+          <span class="section-tag-pill">✨ Gemini AI</span>
+          <h2>Smart Furniture Recommender</h2>
+          <p>Our AI understands your room, style, and budget to suggest the perfect furniture from our shop — with real reasoning, not just price sorting.</p>
+          <div class="ai-feature-list">
+            <div class="ai-feature-item">🧠 Real AI reasoning by Gemini</div>
+            <div class="ai-feature-item">💰 Budget-aware suggestions</div>
+            <div class="ai-feature-item">🏠 Room-type matching</div>
+            <div class="ai-feature-item">📱 Direct WhatsApp inquiry</div>
+          </div>
+        </div>
+        <div class="ai-form-card">
+          <h4>✨ Generate AI Recommendation</h4>
+          <form id="ai-form">
+            <div class="form-group">
+              <label>Furniture Type</label>
+              <select name="category" required>
+                <option value="">Select Furniture Type</option>
+                <option value="sofa">🛋️ Sofa Sets</option>
+                <option value="bed">🛏️ Beds and Diwan Cots</option>
+                <option value="dining">🍽️ Dining Tables</option>
+                <option value="office">💼 Office Tables, Chairs, Racks</option>
+                <option value="cupboard">🗄️ Almiras and Cupboards</option>
+                <option value="table">☕ Tea Tables and Center Tables</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Room Type</label>
+              <select name="roomType" required>
+                <option value="">Select Room Type</option>
+                <option value="living">🏠 Living Room</option>
+                <option value="bedroom">🛏️ Bedroom</option>
+                <option value="office">💼 Office / Workspace</option>
+                <option value="dining">🍽️ Dining Room</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Room Size</label>
+              <input name="dimensions" placeholder="Example: 12x14 ft or 10x10 ft" required />
+            </div>
+            <div class="form-group">
+              <label>Maximum Budget (₹)</label>
+              <input name="budget" type="number" placeholder="Example: 25000" required />
+            </div>
+            <div class="form-group">
+              <label>Style Preference</label>
+              <select name="style" required>
+                <option value="">Select Style</option>
+                <option value="modern">🎨 Modern</option>
+                <option value="classic">🪵 Classic Wooden</option>
+                <option value="premium">👑 Premium Luxury</option>
+              </select>
+            </div>
+            <button type="submit" class="primary-btn" style="width:100%;margin-top:0.5rem">✨ Get AI Recommendation</button>
+          </form>
+          <div id="ai-result" class="ai-result">Fill the details above and get a personalised AI recommendation from Gemini.</div>
+        </div>
+      </section>
+
+    </main>
+
+    <div class="camera-modal" id="camera-modal" aria-hidden="true">
+      <div class="camera-panel">
+        <video id="camera-video" autoplay playsinline muted></video>
+        <canvas id="camera-canvas" style="display:none"></canvas>
+        <div class="camera-actions">
+          <button class="primary-btn" type="button" id="camera-capture">📷 Capture</button>
+          <button class="secondary-btn" type="button" id="camera-close">✕ Close</button>
+        </div>
+        <p id="camera-status">Allow camera access to take a live room photo.</p>
+      </div>
+    </div>
+    <div id="footer-container"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
